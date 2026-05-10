@@ -1,4 +1,5 @@
 import cv2
+import time
 import numpy as np
 from insightface.app import FaceAnalysis
 
@@ -95,12 +96,20 @@ kalman_filter = KalmanFilter2D()
 
 print("摄像头已启动，按 Esc 退出")
 
+OUTPUT_INTERVAL = 0.1
+DISPLAY_INTERVAL = 0.05
+
+last_output_time = 0
+last_display_time = 0
+
 while True:
     ret, frame = cap.read()
 
     if not ret:
         print("无法读取摄像头画面")
         break
+
+    now = time.time()
 
     height, width = frame.shape[:2]
 
@@ -136,7 +145,12 @@ while True:
                 error_y
             )
 
-            print(f"误差坐标: ({filtered_error_x}, {filtered_error_y})")
+            # 终端输出限频
+            if now - last_output_time >= OUTPUT_INTERVAL:
+                print(
+                    f"误差坐标: ({filtered_error_x}, {filtered_error_y})"
+                )
+                last_output_time = now
 
             cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
 
@@ -150,7 +164,10 @@ while True:
                 2
             )
 
-    cv2.imshow("School Face Access GPU", frame)
+    # 屏幕显示限频
+    if now - last_display_time >= DISPLAY_INTERVAL:
+        cv2.imshow("School Face Access GPU", frame)
+        last_display_time = now
 
     if cv2.waitKey(1) & 0xFF == 27:
         break
